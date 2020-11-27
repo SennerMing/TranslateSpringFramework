@@ -34,7 +34,7 @@ Interface that defines a registry for shared bean instances.Can be implemented b
 void registerSingleton(String beanName, Object singletonObject);
 ```
 
-方法简介：将传入singletonObject以beanName为键注册到Bean的注册中心。
+方法介绍：将传入singletonObject以beanName为键注册到Bean的注册中心。
 
 传入的singletonObject应该是一个完全初始化的实例；注册中心不会对该Bean再执行任何初始化操作的回调，特别是不会调用InitializingBean的afterPropertiesSet方法。
 
