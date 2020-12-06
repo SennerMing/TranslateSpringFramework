@@ -262,6 +262,326 @@ public AbstractApplicationContext(@Nullable ApplicationContext parent) {
 
 方法介绍：创建一个新的AbstractApplicationContext给定父上下文
 
+```java
+//---------------------------------------------------------------------
+// Implementation of ApplicationContext interface
+//---------------------------------------------------------------------
+```
+
+注释翻译：ApplicationContext接口的实现方法。
+
+```java
+/**
+ * Set the unique id of this application context.
+ * <p>Default is the object id of the context instance, or the name
+ * of the context bean if the context is itself defined as a bean.
+ * @param id the unique id of the context
+ */
+@Override
+public void setId(String id) {
+   this.id = id;
+}
+```
+
+方法介绍：给当前应用上下文设置唯一的id。
+
+默认的当前上下文实例对象的id，或者是这个上下文bean的名称，如果这个上下文本身定义为一个bean的话。
+
+```java
+/**
+ * Set a friendly name for this context.
+ * Typically done during initialization of concrete context implementations.
+ * <p>Default is the object id of the context instance.
+ */
+public void setDisplayName(String displayName) {
+   Assert.hasLength(displayName, "Display name must not be empty");
+   this.displayName = displayName;
+}
+```
+
+方法介绍：为当前上下文设置一个有好的名字。
+
+通常情况下会在具体上下文实现类的初始化期间完成。
+
+默认的是当前上下文实例对象的id。
+
+```java
+/**
+ * Return a friendly name for this context.
+ * @return a display name for this context (never {@code null})
+ 永远都不会是null
+
+ */
+@Override
+public String getDisplayName() {
+   return this.displayName;
+}
+```
+
+方法介绍：返回当前上下文的有好的名称
+
+```java
+/**
+ * Return the parent context, or {@code null} if there is no parent
+ * (that is, this context is the root of the context hierarchy).
+ */
+that is：也就是说
+@Override
+@Nullable
+public ApplicationContext getParent() {
+   return this.parent;
+}
+```
+
+方法介绍：返回父上下文，或者null如果没有父上下文的话（也就是说，当前上下文是上下文层次结构的起源）
+
+```java
+/**
+ * Set the {@code Environment} for this application context.
+ * <p>Default value is determined by {@link #createEnvironment()}. Replacing the
+ * default with this method is one option but configuration through {@link
+ * #getEnvironment()} should also be considered. In either case, such modifications
+ * should be performed <em>before</em> {@link #refresh()}.
+ * @see org.springframework.context.support.AbstractApplicationContext#createEnvironment
+ */
+@Override
+public void setEnvironment(ConfigurableEnvironment environment) {
+   this.environment = environment;
+}
+```
+
+方法介绍：为当前应用上下文设置Environment。
+
+默认值由createEnvironment()确定的。通过此方法替换默认的Environment是一个可选项但是也要考虑通过getEnvironment()进行配置（意思可能是已有的环境也需要纳入考虑范围）
+
+```java
+/**
+ * Return the {@code Environment} for this application context in configurable
+ * form, allowing for further customization.
+ * <p>If none specified, a default environment will be initialized via
+ * {@link #createEnvironment()}.
+ */
+@Override
+public ConfigurableEnvironment getEnvironment() {
+   if (this.environment == null) {
+      this.environment = createEnvironment();
+   }
+   return this.environment;
+}
+```
+
+方法介绍：以可配置的形式返回当前应用上下文的Environment，允许更进一步的自定义。
+
+如果没有指定，则将会通过createEnvironment()方法初始化一个默认的environment
+
+```java
+/**
+ * Create and return a new {@link StandardEnvironment}.
+ * <p>Subclasses may override this method in order to supply
+ * a custom {@link ConfigurableEnvironment} implementation.
+ */
+protected ConfigurableEnvironment createEnvironment() {
+   return new StandardEnvironment();
+}
+```
+
+方法介绍：创建并返回一个新的StandardEnvironment。
+
+子类们为了提供一个自定义的ConfigurableEnvironment实现类会重写这个方法。
+
+```java
+/**
+ * Return this context's internal bean factory as AutowireCapableBeanFactory,
+ * if already available.
+ * @see #getBeanFactory()
+ */
+@Override
+public AutowireCapableBeanFactory getAutowireCapableBeanFactory() throws IllegalStateException {
+   return getBeanFactory();
+}
+```
+
+方法介绍：返回将当前上下文的内部bean工厂作为AutowireCapableBeanFactory返回，如果已经可用的话。
+
+```java
+/**
+ * Return the timestamp (ms) when this context was first loaded.
+ */
+@Override
+public long getStartupDate() {
+   return this.startupDate;
+}
+```
+
+方法介绍：当当前上下文第一次加载的时候返回一个时间戳
+
+```java
+/**
+ * Publish the given event to all listeners.
+ * <p>Note: Listeners get initialized after the MessageSource, to be able
+ * to access it within listener implementations. Thus, MessageSource
+ * implementations cannot publish events.
+ * @param event the event to publish (may be application-specific or a
+ * standard framework event)
+ （可能是特定于应用程序或者是一个标准的框架事件）
+ */
+@Override
+public void publishEvent(ApplicationEvent event) {
+   publishEvent(event, null);
+}
+```
+
+方法介绍：将给定的事件发布给所有的监听者。
+
+注意：监听者会在MessageSource之后被初始化，这样做是为了能在监听器实现类中获得MessageSource。因此，MessageSource的实现类不能发布事件。
+
+```java
+/**
+ * Publish the given event to all listeners.
+ * <p>Note: Listeners get initialized after the MessageSource, to be able
+ * to access it within listener implementations. Thus, MessageSource
+ * implementations cannot publish events.
+ * @param event the event to publish (may be an {@link ApplicationEvent}
+ * or a payload object to be turned into a {@link PayloadApplicationEvent})
+ */
+可能是ApplicationContext或者是一个要被转换为PayloadApplicationEvent的装载对象
+@Override
+public void publishEvent(Object event) {
+   publishEvent(event, null);
+}
+payload：有效载荷
+```
+
+方法介绍：将给定的事件发布给所有的监听者。
+
+注意：监听者会在MessageSource之后进行初始化，这样就能在监听器的实现类之中获得到MessageSource。因此，MessageSource的实现类不能发布事件。
+
+```java
+/**
+ * Publish the given event to all listeners.
+ * @param event the event to publish (may be an {@link ApplicationEvent}
+ * or a payload object to be turned into a {@link PayloadApplicationEvent})
+ * @param eventType the resolved event type, if known
+ * @since 4.2
+ */
+protected void publishEvent(Object event, @Nullable ResolvableType eventType) {
+   Assert.notNull(event, "Event must not be null");
+
+   // Decorate event as an ApplicationEvent if necessary
+  //如果有必要的话将event装饰为ApplicationEvent
+   ApplicationEvent applicationEvent;
+   if (event instanceof ApplicationEvent) {
+      applicationEvent = (ApplicationEvent) event;
+   }
+   else {
+      applicationEvent = new PayloadApplicationEvent<>(this, event);
+      if (eventType == null) {
+         eventType = ((PayloadApplicationEvent<?>) applicationEvent).getResolvableType();
+      }
+   }
+
+   // Multicast right now if possible - or lazily once the multicaster is initialized
+  //如果可能的话立即组播-或者延迟到组播器初始化完毕立即执行
+   if (this.earlyApplicationEvents != null) {
+      this.earlyApplicationEvents.add(applicationEvent);
+   }
+   else {
+      getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
+   }
+
+   // Publish event via parent context as well...
+  //通过父上下文也发布一下事件
+   if (this.parent != null) {
+      if (this.parent instanceof AbstractApplicationContext) {
+         ((AbstractApplicationContext) this.parent).publishEvent(event, eventType);
+      }
+      else {
+         this.parent.publishEvent(event);
+      }
+   }
+}
+```
+
+方法介绍：将给定的事件发布到所有的监听者
+
+```java
+/**
+ * Return the internal ApplicationEventMulticaster used by the context.
+ * @return the internal ApplicationEventMulticaster (never {@code null})
+ * @throws IllegalStateException if the context has not been initialized yet
+ */
+ApplicationEventMulticaster getApplicationEventMulticaster() throws IllegalStateException {
+   if (this.applicationEventMulticaster == null) {
+      throw new IllegalStateException("ApplicationEventMulticaster not initialized - " +
+            "call 'refresh' before multicasting events via the context: " + this);
+   }
+   return this.applicationEventMulticaster;
+}
+```
+
+方法介绍：返回一个当前上下文使用的内部ApplicationEventMulticaster
+
+```java
+/**
+ * Return the internal LifecycleProcessor used by the context.
+ * @return the internal LifecycleProcessor (never {@code null})
+ * @throws IllegalStateException if the context has not been initialized yet
+ */
+LifecycleProcessor getLifecycleProcessor() throws IllegalStateException {
+   if (this.lifecycleProcessor == null) {
+      throw new IllegalStateException("LifecycleProcessor not initialized - " +
+            "call 'refresh' before invoking lifecycle methods via the context: " + this);
+   }
+   return this.lifecycleProcessor;
+}
+```
+
+方法介绍：返回一个当前上下文使用的内部的LifecycleProcessor
+
+```java
+/**
+ * Return the ResourcePatternResolver to use for resolving location patterns
+ * into Resource instances. Default is a
+ * {@link org.springframework.core.io.support.PathMatchingResourcePatternResolver},
+ * supporting Ant-style location patterns.
+ * <p>Can be overridden in subclasses, for extended resolution strategies,
+ * for example in a web environment.
+ * <p><b>Do not call this when needing to resolve a location pattern.</b>
+ * Call the context's {@code getResources} method instead, which
+ * will delegate to the ResourcePatternResolver.
+ * @return the ResourcePatternResolver for this context
+ * @see #getResources
+ * @see org.springframework.core.io.support.PathMatchingResourcePatternResolver
+ */
+protected ResourcePatternResolver getResourcePatternResolver() {
+   return new PathMatchingResourcePatternResolver(this);
+}
+```
+
+方法介绍：返回ResourcePatternResolver用来解析位置模式为资源实例。默认是一个PathMatchingResourcePatternResolver，支持Ant风格的位置匹配模式。
+
+为了扩展解析策略，可以被子类重写，例如web环境。
+
+当需要解析一个位置模式不要调用这个方法。请调用当前上下文的getResources()方法作为替代，它将会委托给ResourcePatternResolver来处理。
+
+```java
+//---------------------------------------------------------------------
+// Implementation of ConfigurableApplicationContext interface
+//---------------------------------------------------------------------
+```
+
+注释翻译：下面是对ConfigurableApplicationContext接口的实现
+
+
+
+
+
+
+
+
+
+
+
 
 
 
