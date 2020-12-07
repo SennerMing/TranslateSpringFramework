@@ -572,6 +572,171 @@ protected ResourcePatternResolver getResourcePatternResolver() {
 
 注释翻译：下面是对ConfigurableApplicationContext接口的实现
 
+```java
+/**
+ * Set the parent of this application context.
+ * <p>The parent {@linkplain ApplicationContext#getEnvironment() environment} is
+ * {@linkplain ConfigurableEnvironment#merge(ConfigurableEnvironment) merged} with
+ * this (child) application context environment if the parent is non-{@code null} and
+ * its environment is an instance of {@link ConfigurableEnvironment}.
+ * @see ConfigurableEnvironment#merge(ConfigurableEnvironment)
+ */
+@Override
+public void setParent(@Nullable ApplicationContext parent) {
+   this.parent = parent;
+   if (parent != null) {
+      Environment parentEnvironment = parent.getEnvironment();
+      if (parentEnvironment instanceof ConfigurableEnvironment) {
+         getEnvironment().merge((ConfigurableEnvironment) parentEnvironment);
+      }
+   }
+}
+```
+
+方法介绍：设置当前应用上下文的父ApplicationContext
+
+这个父ApplicationContext的[通过ApplicationContext的getEnvironment()方法获得的环境]是[通过ConfigurableEnvironment的merge(ConfigurableEnvironment)与当前子引用上下文环境合并后的environment]如果父ApplicationContext是个非空的并且它的环境是ConfigurableEnvironment的类型实例。
+
+```java
+/**
+ * Return the list of BeanFactoryPostProcessors that will get applied
+ * to the internal BeanFactory.
+ */
+public List<BeanFactoryPostProcessor> getBeanFactoryPostProcessors() {
+   return this.beanFactoryPostProcessors;
+}
+```
+
+方法介绍：返回将会被应用在内部BeanFactory中的BeanFactoryPostProcessors的列表。
+
+```java
+/**
+ * Return the list of statically specified ApplicationListeners.
+ */
+public Collection<ApplicationListener<?>> getApplicationListeners() {
+   return this.applicationListeners;
+}
+```
+
+方法介绍：返回静态化指定的ApplicationListeners列表。
+
+```java
+@Override
+public void refresh() throws BeansException, IllegalStateException {
+   synchronized (this.startupShutdownMonitor) {
+      // Prepare this context for refreshing.
+       //为刷新准备当前上下文
+      prepareRefresh();
+
+      // Tell the subclass to refresh the internal bean factory.
+       //告诉子类去刷新内部bean工厂
+      ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+      // Prepare the bean factory for use in this context.
+       //为当前上下文的使用准备bean 工厂
+      prepareBeanFactory(beanFactory);
+
+      try {
+         // Allows post-processing of the bean factory in context subclasses.
+          //允许在当前上下文子类中的bean工厂进行后置处理
+         postProcessBeanFactory(beanFactory);
+
+         // Invoke factory processors registered as beans in the context.
+          //调用当前上下文中以beans形式注册的工厂处理器
+         invokeBeanFactoryPostProcessors(beanFactory);
+
+         // Register bean processors that intercept bean creation.
+          //注册拦截bean创建的bean处理器。
+         registerBeanPostProcessors(beanFactory);
+
+         // Initialize message source for this context.
+          //为当前上下文初始化消息源
+         initMessageSource();
+
+         // Initialize event multicaster for this context.
+          //为当前上下文初始化事件组播器
+         initApplicationEventMulticaster();
+
+         // Initialize other special beans in specific context subclasses.
+          //在指定上下文子类中初始化其他特殊的beans
+         onRefresh();
+
+         // Check for listener beans and register them.
+          //检查并注册监听器beans
+         registerListeners();
+
+         // Instantiate all remaining (non-lazy-init) singletons.
+         //初始化所有剩下的（非懒加载）的单例
+         finishBeanFactoryInitialization(beanFactory);
+
+         // Last step: publish corresponding event.
+          //最后一步：发布相应的事件
+         finishRefresh();
+      }
+
+      catch (BeansException ex) {
+         if (logger.isWarnEnabled()) {
+            logger.warn("Exception encountered during context initialization - " +
+                  "cancelling refresh attempt: " + ex);
+         }
+
+         // Destroy already created singletons to avoid dangling（晃来晃去的，悬空的） resources.
+          //销毁已经创建的单例来避免悬空的资源
+         destroyBeans();
+
+         // Reset 'active' flag.
+         //重置'激活'标识
+         cancelRefresh(ex);
+
+         // Propagate（传播） exception to caller.
+          //将异常传递给调用者
+         throw ex;
+      }
+
+      finally {
+         // Reset common introspection caches in Spring's core, since we
+         // might not ever need metadata for singleton beans anymore...
+          //在Spring核心重置通用内省缓存，因为我们可能不再需要singleton bean的元数据
+         resetCommonCaches();
+      }
+   }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
