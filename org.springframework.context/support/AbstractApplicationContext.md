@@ -1095,43 +1095,274 @@ protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory b
 
 方法介绍：完成当前上下文的bean工厂的初始化，初始化所有遗留的单例beans
 
+```java
+/**
+ * Finish the refresh of this context, invoking the LifecycleProcessor's
+ * onRefresh() method and publishing the
+ * {@link org.springframework.context.event.ContextRefreshedEvent}.
+ */
+protected void finishRefresh() {
+   // Clear context-level resource caches (such as ASM metadata from scanning).
+  //清除上下文级的资源缓存(像是从扫描中获取的ASM元数据)
+   clearResourceCaches();
 
+   // Initialize lifecycle processor for this context.
+  //为当前上下文初始化声明周期处理器
+   initLifecycleProcessor();
 
+   // Propagate refresh to lifecycle processor first.
+  //首先将刷新传播到声明周期处理器
+   getLifecycleProcessor().onRefresh();
 
+   // Publish the final event.
+  //发布最终事件
+   publishEvent(new ContextRefreshedEvent(this));
 
+   // Participate in LiveBeansView MBean, if active.
+  //参与进LiveBeansView的MBean，如果激活的话
+   LiveBeansView.registerApplicationContext(this);
+}
+```
 
+方法介绍：完成当前上下文的刷新，调用LifecycleProcessor的onRefresh()方法并且发布ContextRefreshedEvent。
 
+```java
+/**
+ * Reset Spring's common reflection metadata caches, in particular the
+ * {@link ReflectionUtils}, {@link AnnotationUtils}, {@link ResolvableType}
+ * and {@link CachedIntrospectionResults} caches.
+ * @since 4.2
+ * @see ReflectionUtils#clearCache()
+ * @see AnnotationUtils#clearCache()
+ * @see ResolvableType#clearCache()
+ * @see CachedIntrospectionResults#clearClassLoader(ClassLoader)
+ */
+protected void resetCommonCaches() {
+   ReflectionUtils.clearCache();
+   AnnotationUtils.clearCache();
+   ResolvableType.clearCache();
+   CachedIntrospectionResults.clearClassLoader(getClassLoader());
+}
+```
 
+方法介绍：重置Spring的通用反射元数据缓存，尤其是ReflectionUtils，AnnotationUtils，ResolveableType和CachedIntrospectionResults的缓存
 
+```java
+/**
+ * Register a shutdown hook {@linkplain Thread#getName() named}
+ * {@code SpringContextShutdownHook} with the JVM runtime, closing this
+ * context on JVM shutdown unless it has already been closed at that time.
+ * <p>Delegates to {@code doClose()} for the actual closing procedure.
+ * @see Runtime#addShutdownHook
+ * @see ConfigurableApplicationContext#SHUTDOWN_HOOK_THREAD_NAME
+ * @see #close()
+ * @see #doClose()
+ */
+@Override
+public void registerShutdownHook() {
+   if (this.shutdownHook == null) {
+      // No shutdown hook registered yet.
+      this.shutdownHook = new Thread(SHUTDOWN_HOOK_THREAD_NAME) {
+         @Override
+         public void run() {
+            synchronized (startupShutdownMonitor) {
+               doClose();
+            }
+         }
+      };
+      Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+   }
+}
+```
 
+方法介绍：向JVM运行时注册一个关闭钩子以Thread的getName()命名的SpringContextShutdownHook，在JVM关闭时关闭当前上下文除非它那时已经被关闭。委托给doClose()方法去执行真正的关闭程序（步骤）。
 
+```java
+/**
+ * Callback for destruction of this instance, originally attached
+ * to a {@code DisposableBean} implementation (not anymore in 5.0).
+ * <p>The {@link #close()} method is the native way to shut down
+ * an ApplicationContext, which this method simply delegates to.
+ * @deprecated as of Spring Framework 5.0, in favor of {@link #close()}
+ */
+@Deprecated
+public void destroy() {
+   close();
+}
+in favor of:交付给；赞同
+```
 
+方法介绍：销毁当前实例的回调，最初被附加到DisposableBean实现中（5.0就不再这样做了）。
 
+这个close()方法是关闭ApplicationContext的本机方法，此方法只委托给ApplicationContext。Spring框架5.0之后就废弃了，取而代之的是close()。
 
+```java
+/**
+ * Close this application context, destroying all beans in its bean factory.
+ * <p>Delegates to {@code doClose()} for the actual closing procedure.
+ * Also removes a JVM shutdown hook, if registered, as it's not needed anymore.
+ * @see #doClose()
+ * @see #registerShutdownHook()
+ */
+@Override
+public void close() {
+   synchronized (this.startupShutdownMonitor) {
+      doClose();
+      // If we registered a JVM shutdown hook, we don't need it anymore now:
+      // We've already explicitly closed the context.
+     //如果我们注册一个JVM关闭钩子，我们现在不再需要它了
+     //我们已经显示关闭上下文了
+      if (this.shutdownHook != null) {
+         try {
+            Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+         }
+         catch (IllegalStateException ex) {
+            // ignore - VM is already shutting down
+           //忽略-虚拟机已经关闭
+         }
+      }
+   }
+}
+```
 
+方法介绍：关闭当前应用上下文，销毁所有上下文中bean工厂的所有beans。
 
+委托给doClose()用以执行真实的关闭处理。也会移除JVM关闭钩子，如果注册的话，因为不再需要它了。
 
+```java
+/**
+ * Actually performs context closing: publishes a ContextClosedEvent and
+ * destroys the singletons in the bean factory of this application context.
+ * <p>Called by both {@code close()} and a JVM shutdown hook, if any.
+ * @see org.springframework.context.event.ContextClosedEvent
+ * @see #destroyBeans()
+ * @see #close()
+ * @see #registerShutdownHook()
+ */
+protected void doClose() {
+   // Check whether an actual close attempt is necessary...
+  //是否有必要进行关闭检查...
+   if (this.active.get() && this.closed.compareAndSet(false, true)) {
+      if (logger.isDebugEnabled()) {
+         logger.debug("Closing " + this);
+      }
 
+      LiveBeansView.unregisterApplicationContext(this);
 
+      try {
+         // Publish shutdown event.
+        //发布关闭事件
+         publishEvent(new ContextClosedEvent(this));
+      }
+      catch (Throwable ex) {
+         logger.warn("Exception thrown from ApplicationListener handling ContextClosedEvent", ex);
+      }
 
+      // Stop all Lifecycle beans, to avoid delays during individual destruction.
+     //关闭所有生命周期beans，以避免单个销毁过程中的延迟。
+      if (this.lifecycleProcessor != null) {
+         try {
+            this.lifecycleProcessor.onClose();
+         }
+         catch (Throwable ex) {
+            logger.warn("Exception thrown from LifecycleProcessor on context close", ex);
+         }
+      }
 
+      // Destroy all cached singletons in the context's BeanFactory.
+     //销毁所有缓存在上下文工厂中的单例
+      destroyBeans();
 
+      // Close the state of this context itself.
+     //关闭当前上下文自身的状态
+      closeBeanFactory();
 
+      // Let subclasses do some final clean-up if they wish...
+     //让子类做一些最终清理如果他们希望这样...
+      onClose();
 
+      // Reset local application listeners to pre-refresh state.
+     //重置本地应用监听者用以预刷新状态
+      if (this.earlyApplicationListeners != null) {
+         this.applicationListeners.clear();
+         this.applicationListeners.addAll(this.earlyApplicationListeners);
+      }
 
+      // Switch to inactive.
+     //切换到闲置状态
+      this.active.set(false);
+   }
+}
+```
 
+方法介绍：真正执行上下文关闭：发布一个ContextClosedEvent并且销毁应用上下文中bean工厂的单例。会被close()方法和JVM关闭钩子调用，如果存在的话。
 
+```java
+/**
+ * Template method for destroying all beans that this context manages.
+ * The default implementation destroy all cached singletons in this context,
+ * invoking {@code DisposableBean.destroy()} and/or the specified
+ * "destroy-method".
+ * <p>Can be overridden to add context-specific bean destruction steps
+ * right before or right after standard singleton destruction,
+ * while the context's BeanFactory is still active.
+ * @see #getBeanFactory()
+ * @see org.springframework.beans.factory.config.ConfigurableBeanFactory#destroySingletons()
+ */
+protected void destroyBeans() {
+   getBeanFactory().destroySingletons();
+}
+```
 
+方法介绍：用来销毁所有当前上下文管理的beans的模板方法。默认的实现销毁上下文中所有缓存的单例，调用DisposableBean的destory()方法并且/或者指定的"destory-method"。
 
+可以被重写用以在标准单例销毁之前或之后添加新增上下文指定的bean的销毁步骤，当上下文的BeanFactory还处于激活状态时。
 
+```java
+/**
+ * Template method which can be overridden to add context-specific shutdown work.
+ * The default implementation is empty.
+ * <p>Called at the end of {@link #doClose}'s shutdown procedure, after
+ * this context's BeanFactory has been closed. If custom shutdown logic
+ * needs to execute while the BeanFactory is still active, override
+ * the {@link #destroyBeans()} method instead.
+ */
+protected void onClose() {
+   // For subclasses: do nothing by default.
+}
+```
 
+方法介绍：模板方法--可以被重写用以添加上下文指定的关闭工作。默认的实现是空的。
 
+在当前上下文的BeanFactory已经被关闭后，在doClose的关闭过程最后调用。如果当BeanFacotry还处于激活状态，自定义关闭逻辑需要去执行，作为替代重写destroyBeans()方法。
 
+```java
+/**
+ * Assert that this context's BeanFactory is currently active,
+ * throwing an {@link IllegalStateException} if it isn't.
+ * <p>Invoked by all {@link BeanFactory} delegation methods that depend
+ * on an active context, i.e. in particular all bean accessor methods.
+ * <p>The default implementation checks the {@link #isActive() 'active'} status
+ * of this context overall. May be overridden for more specific checks, or for a
+ * no-op if {@link #getBeanFactory()} itself throws an exception in such a case.
+ */
+protected void assertBeanFactoryActive() {
+   if (!this.active.get()) {
+      if (this.closed.get()) {
+         throw new IllegalStateException(getDisplayName() + " has been closed already");
+      }
+      else {
+         throw new IllegalStateException(getDisplayName() + " has not been refreshed yet");
+      }
+   }
+}
+```
 
+方法介绍：断言此上下文的BeanFactory当前还处于激活状态，抛出一个非法状态异常如果不是的话。
 
+由依赖于活动上下文的所有BeanFactory的委托方法调用，即尤其是所有bean的访问器方法。
 
-
-
+默认的实现检查此上下文的isActive()返回为‘Active’状态。可能被重写用以更精确的检查，或者用以无操作，如果getBeanFactory（）本身在这种情况下引发异常。
 
 
 
