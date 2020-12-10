@@ -1364,6 +1364,131 @@ protected void assertBeanFactoryActive() {
 
 默认的实现检查此上下文的isActive()返回为‘Active’状态。可能被重写用以更精确的检查，或者用以无操作，如果getBeanFactory（）本身在这种情况下引发异常。
 
+```java
+/**
+	 * Return the internal bean factory of the parent context if it implements
+	 * ConfigurableApplicationContext; else, return the parent context itself.
+	 * @see org.springframework.context.ConfigurableApplicationContext#getBeanFactory
+	 */
+	@Nullable
+	protected BeanFactory getInternalParentBeanFactory() {
+		return (getParent() instanceof ConfigurableApplicationContext ?
+				((ConfigurableApplicationContext) getParent()).getBeanFactory() : getParent());
+	}
+```
+
+方法介绍：返回父上下文的内部Bean工程如果他实现了ConfigurableApplicationContext；否则返回则这个父上下文本身。
+
+```java
+/**
+	 * Return the internal MessageSource used by the context.
+	 * @return the internal MessageSource (never {@code null})
+	 * @throws IllegalStateException if the context has not been initialized yet
+	 */
+	private MessageSource getMessageSource() throws IllegalStateException {
+		if (this.messageSource == null) {
+			throw new IllegalStateException("MessageSource not initialized - " +
+					"call 'refresh' before accessing messages via the context: " + this);
+		}
+		return this.messageSource;
+	}
+```
+
+方法介绍：返回上下文使用的内部MessageSource
+
+```java
+/**
+	 * Return the internal message source of the parent context if it is an
+	 * AbstractApplicationContext too; else, return the parent context itself.
+	 */
+	@Nullable
+	protected MessageSource getInternalParentMessageSource() {
+		return (getParent() instanceof AbstractApplicationContext ?
+				((AbstractApplicationContext) getParent()).messageSource : getParent());
+	}
+```
+
+方法介绍：返回父上下文的内部消息源如果父类也是AbstractApplicationContext，斗则返回这个父上下文本身。
+
+```java
+//---------------------------------------------------------------------
+	// Abstract methods that must be implemented by subclasses
+	//---------------------------------------------------------------------
+```
+
+注释翻译：必须被子类实现的抽象方法
+
+```java
+/**
+	 * Subclasses must implement this method to perform the actual configuration load.
+	 * The method is invoked by {@link #refresh()} before any other initialization work.
+	 * <p>A subclass will either create a new bean factory and hold a reference to it,
+	 * or return a single BeanFactory instance that it holds. In the latter case, it will
+	 * usually throw an IllegalStateException if refreshing the context more than once.
+	 * @throws BeansException if initialization of the bean factory failed
+	 * @throws IllegalStateException if already initialized and multiple refresh
+	 * attempts are not supported
+	 */
+	protected abstract void refreshBeanFactory() throws BeansException, IllegalStateException;
+in the latter case:在后一种情况
+```
+
+方法介绍：子类必须实现这个方法用以执行实际的配置加载。这个方法会在其他初始化工作之前被refresh()方法调用。子类将不是创建一个新的bean工厂并且持有一个对工程的引用，就是返回他持有的一个单例BeanFactory实例。在后一种情况下，将会经常抛出IllegalStateException如果刷新这个上下文超过一次的话。
+
+```java
+/**
+	 * Subclasses must implement this method to release their internal bean factory.
+	 * This method gets invoked by {@link #close()} after all other shutdown work.
+	 * <p>Should never throw an exception but rather log shutdown failures.
+	 */
+	protected abstract void closeBeanFactory();
+```
+
+方法介绍：子类必须实现这个方法用以释放他们的内部bean工厂，这个方法会在所有其他关闭工作之后被close()执行。永远不抛出异常，而应该进行关闭失败记录。
+
+```java
+/**
+	 * Subclasses must return their internal bean factory here. They should implement the
+	 * lookup efficiently, so that it can be called repeatedly without a performance penalty.
+	 * <p>Note: Subclasses should check whether the context is still active before
+	 * returning the internal bean factory. The internal factory should generally be
+	 * considered unavailable once the context has been closed.
+	 * @return this application context's internal bean factory (never {@code null})
+	 * @throws IllegalStateException if the context does not hold an internal bean factory yet
+	 * (usually if {@link #refresh()} has never been called) or if the context has been
+	 * closed already
+	 * @see #refreshBeanFactory()
+	 * @see #closeBeanFactory()
+	 */
+	@Override
+	public abstract ConfigurableListableBeanFactory getBeanFactory() throws IllegalStateException;
+penalty：处罚
+```
+
+方法介绍：这里子类必须返回他们内部bean工厂。他们应有效的实现查找，这样的话就可以重复调用而没有性能
+
+损失。
+
+注意：子类应该检查上下文在返回内部bean工厂之前是否还是激活状态。一旦上下文被关闭，内部工厂应该通常被认为不可用
+
+```java
+/**
+	 * Return information about this context.
+	 */
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder(getDisplayName());
+		sb.append(", started on ").append(new Date(getStartupDate()));
+		ApplicationContext parent = getParent();
+		if (parent != null) {
+			sb.append(", parent: ").append(parent.getDisplayName());
+		}
+		return sb.toString();
+	}
+```
+
+方法介绍：返回关于这个上下文的信息。
+
 
 
 

@@ -110,6 +110,115 @@
 	public Collection<ProtocolResolver> getProtocolResolvers() {
 		return this.protocolResolvers;
 	}
+introspection：内省！
 ```
 
-方法介绍：返回当前注册的协议解析器集合，
+方法介绍：返回当前注册的协议解析器集合，允许内省和修改。
+
+```java
+/**
+ * Obtain a cache for the given value type, keyed by {@link Resource}.
+ * @param valueType the value type, e.g. an ASM {@code MetadataReader}
+ 值类型，例如ASM MetadataReader
+ * @return the cache {@link Map}, shared at the {@code ResourceLoader} level
+ 返回缓存Map，在ResourceLoader层级共享
+ * @since 5.0
+ */
+@SuppressWarnings("unchecked")
+public <T> Map<Resource, T> getResourceCache(Class<T> valueType) {
+   return (Map<Resource, T>) this.resourceCaches.computeIfAbsent(valueType, key -> new ConcurrentHashMap<>());
+}
+```
+
+方法介绍：获得一个给定值类型的缓存，以Resource为键。
+
+```java
+/**
+ * Clear all resource caches in this resource loader.
+ * @since 5.0
+ * @see #getResourceCache
+ */
+public void clearResourceCaches() {
+   this.resourceCaches.clear();
+}
+```
+
+方法介绍：清除所有在当这个资源加载器中的资源缓存
+
+```java
+@Override
+public Resource getResource(String location) {
+   Assert.notNull(location, "Location must not be null");
+
+   for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
+      Resource resource = protocolResolver.resolve(location, this);
+      if (resource != null) {
+         return resource;
+      }
+   }
+
+   if (location.startsWith("/")) {
+      return getResourceByPath(location);
+   }
+   else if (location.startsWith(CLASSPATH_URL_PREFIX)) {
+      return new ClassPathResource(location.substring(CLASSPATH_URL_PREFIX.length()), getClassLoader());
+   }
+   else {
+      try {
+         // Try to parse the location as a URL...
+        //试图将路径当做URL来翻译
+         URL url = new URL(location);
+         return (ResourceUtils.isFileURL(url) ? new FileUrlResource(url) : new UrlResource(url));
+      }
+      catch (MalformedURLException ex) {
+         // No URL -> resolve as resource path.
+        //没有URL-->当做资源路径进行解析
+         return getResourceByPath(location);
+      }
+   }
+}
+```
+
+```java
+/**
+ * Return a Resource handle for the resource at the given path.
+ * <p>The default implementation supports class path locations. This should
+ * be appropriate for standalone implementations but can be overridden,
+ * e.g. for implementations targeted at a Servlet container.
+ * @param path the path to the resource
+ * @return the corresponding Resource handle
+ * @see ClassPathResource
+ * @see org.springframework.context.support.FileSystemXmlApplicationContext#getResourceByPath
+ * @see org.springframework.web.context.support.XmlWebApplicationContext#getResourceByPath
+ */
+protected Resource getResourceByPath(String path) {
+   return new ClassPathContextResource(path, getClassLoader());
+}
+```
+
+方法介绍：返回一个通过给定路径访问资源的资源句柄。这个默认的实现支持类路径地址。这个应该适用于独立的实现但是可以被重写，例如针对Servlet容器实现。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
